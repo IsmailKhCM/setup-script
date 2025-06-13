@@ -231,18 +231,24 @@ echo "Downloading...${app^^}"
 wget "https://repo.jellyfin.org/files/server/portable/latest-stable/any/jellyfin_${JELLYFIN_VERSION}.tar.gz" \
      -O ${app}.tar.gz > /dev/null 2>&1
 
+# Prepare target folder
+rm -rf ${app}
 mkdir -p ${app}
-# Strip the one top-level "jellyfin/" folder so all DLLs end up directly in ~/.bin/jellyfin/
-tar -xzf ${app}.tar.gz -C ${app} --strip-components=1 > /dev/null 2>&1
-rm ${app}.tar.gz > /dev/null 2>&1
 
+# Strip *two* levels ("jellyfin/jellyfin/…") so all files land in ~/.bin/jellyfin/
+tar -xzf ${app}.tar.gz -C ${app} --strip-components=2 > /dev/null 2>&1
+rm ${app}.tar.gz
+
+# Verify the main DLL is where we expect
 if [ ! -f ${app}/jellyfin.dll ]; then
-  echo "❌ jellyfin.dll not found—please verify the archive structure"
+  echo "❌ jellyfin.dll not found in ${app}/ — archive layout may have changed"
   exit 1
 fi
 
 chmod +x ${app}/jellyfin.dll
 echo "${app^^} Installed"
+
+# Now your existing network.xml logic continues unchanged:
 echo "Configuring ${app^^}..."
 if [ ! -f $datadir/network.xml ]; then
   mkdir -p $(dirname $datadir/network.xml)
@@ -262,11 +268,14 @@ if [ ! -f $datadir/network.xml ]; then
 </NetworkConfiguration>
 EOF
 fi
+
 sed -i -e "s/\(<PublicPort>\)[^<]*\(<\/PublicPort>\)/\1$JELLYFIN_PORT\2/g" $datadir/network.xml
 sed -i -e "s/\(<HttpServerPortNumber>\)[^<]*\(<\/HttpServerPortNumber>\)/\1$JELLYFIN_PORT\2/g" $datadir/network.xml
 sed -i -e "s|<BaseUrl \/>|<BaseUrl></BaseUrl>|g" $datadir/network.xml
 sed -i -e "s|\(<BaseUrl>\)[^<]*\(<\/BaseUrl>\)|\1/public-${USERNAME}/${app}\2|g" $datadir/network.xml
+
 echo "${app^^} configured"
+
 echo ""
 
 cat << 'EOF' >> $HOME/.bashrc
