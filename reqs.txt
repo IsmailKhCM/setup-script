@@ -219,8 +219,9 @@ datadir="$HOME/.config/${app}"
 cd ${installdir}
 echo "Downloading...${app^^}"
 wget "https://repo.jellyfin.org/releases/server/portable/stable/combined/jellyfin_${JELLYFIN_VERSION}-amd64.tar.gz" -O ${app}.tar.gz > /dev/null 2>&1
-mkdir ${app}
-tar -xvzf ${app}.tar.gz -C ${app} --strip-components=2 > /dev/null 2>&1
+mkdir -p ${app}
+# Unpack one level down so jellyfin.dll ends up in ~/.bin/jellyfin/jellyfin.dll
+tar -xzf ${app}.tar.gz -C ${app} --strip-components=1 > /dev/null 2>&1
 rm ${app}.tar.gz > /dev/null 2>&1
 chmod +x ${app}/jellyfin.dll
 echo "${app^^} Installed"
@@ -273,7 +274,7 @@ echo ""
 
 cat << 'EOF' >> $HOME/.bashrc
 
-alias jellyfin='tmux new-session -d -s "jellyfin" "export DOTNET_ROOT=$HOME/.bin/dotnet && export JELLYFIN_DATA_DIR=$HOME/.config/jellyfin && JELLYFIN_LOG_DIR=$HOME/.config/jellyfin/log && nice -n 19 sh -c $DOTNET_ROOT/dotnet\ $HOME/.bin/jellyfin/jellyfin.dll"'
+alias jellyfin='tmux new-session -d -s "jellyfin" "export DOTNET_ROOT=$HOME/.bin/dotnet && export JELLYFIN_DATA_DIR=$HOME/.config/jellyfin && JELLYFIN_LOG_DIR=$HOME/.config/jellyfin/log && nice -n 19 sh -c \$DOTNET_ROOT/dotnet\ $HOME/.bin/jellyfin/jellyfin.dll"'
 alias sonarr='tmux new-session -d -s "sonarr" "mono $HOME/.bin/Sonarr/Sonarr.exe --data=$HOME/.config/sonarr; exec $SHELL"'
 alias radarr='tmux new-session -d -s "radarr" "$HOME/.bin/Radarr/Radarr -nobrowser -data=$HOME/.config/radarr; exec $SHELL"'
 alias prowlarr='tmux new-session -d -s "prowlarr" -n "prowlarr" "$HOME/.bin/Prowlarr/Prowlarr -nobrowser -data=$HOME/.config/prowlarr; exec $SHELL"'
@@ -365,9 +366,7 @@ echo ""
 echo "Connect to running application use command 'tmux attach -t <app-name>'"
 echo "e.g to attach to radarr 'tmux attach -t radarr'"
 echo "Exit tmux session by pressing 'CTRL+b' then 'a' "
-echo ""
-echo "To start application manually use appname as command"
-echo "e.g for SONARR use 'sonarr'"
+
 echo ""
 echo "RADARR-URL = https://$(hostname)/public-$USERNAME/radarr/"
 echo "SONARR-URL = https://$(hostname)/public-$USERNAME/sonarr/"
@@ -376,6 +375,7 @@ echo "SABNZBD-URL = https://$(hostname)/public-$USERNAME/sabnzbd/"
 echo "SABNZBD-WIZARD-URL = https://$(hostname)/public-$USERNAME/sabnzbd/wizard/"
 echo "JELLYFIN-URL = https://$(hostname)/public-$USERNAME/jellyfin/web/index.html"
 echo "JELLYFIN-ALTERNATE-URL = $(curl -s ifconfig.me):$JELLYFIN_PORT/public-$USERNAME/jellyfin/"
+
 echo ""
 echo "To kill all applications use 'tmux kill-server'"
 echo ""
